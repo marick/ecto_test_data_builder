@@ -16,9 +16,31 @@ configuration like this:
 
 <img src="/pics/reservation_schema.png" width="400px"/>
 
+I claim the code is a better way to set up test data than other approaches. 
+
+In addition to creating rows in database tables, the functions produce a big map that 
+contains lots of information useful to tests in a way that's easily accessible to tests. 
+
+For example, it's straightforward to have the `repo` structure contain top-level fields that point directly to important values. This allows you to avoid the busywork of keeping track of database ids. Instead, there's only one "source of truth" and you use that:
+
+```elixir
+# setup
+
+repo = 
+  ...
+  |> animal("bossie", ...)
+  |> shorthand(schema: :animal)
+...
+
+# The function under test
+
+... VM.Animal.fetch(:one_for_edit, repo.bossie.id) ...
+                                   ^^^^^^^^^^^^^''^
+```
+
+This is surprisingly useful.
 
 
-        
 
 ## Installation
 
