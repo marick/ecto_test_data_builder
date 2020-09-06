@@ -1,6 +1,24 @@
 # EctoTestDataBuilder
 
-**TODO: Add description**
+This provides support code for writing Ecto test data builders that
+are used like this:
+
+```elixir
+repo = 
+  empty_repo()
+  |> procedure("haltering", frequency: "twice per week")
+  |> reservation_for(["bossie"], ["haltering"], date: @wed)
+  |> reservation_for(["bossie"], ["haltering"], date: @mon)
+```
+
+That code constructs in-database test data for a database
+configuration like this:
+
+![a reservation schema](/pics/reservation_schema.png)
+
+
+
+        
 
 ## Installation
 
