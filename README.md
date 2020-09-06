@@ -14,7 +14,7 @@ repo =
 That code constructs in-database test data for a database
 configuration like this:
 
-<img src="/pics/reservation_schema.png" width="600px"/>
+<img src="/pics/reservation_schema.png" width="400px"/>
 
 
 
