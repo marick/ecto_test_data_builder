@@ -1,4 +1,4 @@
-# EctoTestDataBuilder
+# Support code for Ecto test data builders
 
 This provides support code for writing Ecto test data builders that
 are used like this:
