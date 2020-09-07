@@ -16,16 +16,16 @@ configuration like this:
 
 <img src="/pics/reservation_schema.png" width="400px"/>
 
-See [USE.md](./USE.md) for an example of building a test-data
-builder using this package.
-        
-=======
-I claim the code is a better way to set up test data than other approaches. 
+I claim that code is a better way to set up test data than other approaches. 
 
-In addition to creating rows in database tables, the functions produce a big map, conventionally bound to `repo`, that 
-contains a view into the database that makes common testing operations simpler.
+In addition to creating rows in database tables, the functions produce
+a "repo cache", conventionally bound to `repo`, that contains a view into
+the database that makes common testing operations simpler.
 
-For example, it's straightforward to have the `repo` structure contain top-level fields that point directly to important values. This allows you to avoid the busywork of keeping track of database ids. Instead, there's only one "source of truth" and you use that:
+For example, it's straightforward to have the `repo` structure contain
+top-level fields that point directly to important values. This allows
+you to avoid the busywork of keeping track of database ids. Instead,
+there's only one "source of truth" and you use that:
 
 ```elixir
 # setup
@@ -33,7 +33,6 @@ For example, it's straightforward to have the `repo` structure contain top-level
 repo = 
   ...
   |> animal("bossie", ...)
-  |> shorthand(schema: :animal)
 ...
 
 # The function under test
@@ -44,8 +43,10 @@ repo =
 
 This is surprisingly useful.
 
+## More information
 
->>>>>>> 388302ca096978f8be9c6d97546bf44cd8381f8c
+See [USE.md](./USE.md) for a description of using this package to
+create a custom test-data builder.
 
 ## Installation
 
