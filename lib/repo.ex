@@ -1,6 +1,20 @@
 defmodule EctoTestDataBuilder.Repo do
-
   alias EctoTestDataBuilder.Schema, as: Schema
+
+  @moduledoc """
+
+  Functions for manipulating the repo cache.
+
+  One can `load_fully/3` individual cache values, or groups of
+  them. "Fully loaded" is application-defined, but typically means
+  most or all of a schema's associations.
+
+  One can also produce `shorthand/2` references to values by
+  installing them as atom keys at the top level of the repo cache,
+  allowing:
+
+      ...Repo.get(repo.bossie.id)...
+  """
 
   @doc """
   Fully load all values in a list of schemas, with "fully" determined by caller.

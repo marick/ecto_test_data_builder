@@ -1,4 +1,4 @@
-# EctoTestDataBuilder
+# README
 
 This provides support code for writing Ecto test data builders that
 are used like this:
@@ -11,14 +11,13 @@ repo =
   |> reservation_for(["bossie"], ["haltering"], date: @mon)
 ```
 
-That code constructs in-database test data for a database
+That code constructs test data for a database
 configuration like this:
 
-![a reservation schema](/pics/reservation_schema.png)
+![a reservation schema](pics/reservation_schema.png)
 
-
-
-        
+See [USE.md](./USE.md) for an example of building a test-data
+builder using this package.
 
 ## Installation
 

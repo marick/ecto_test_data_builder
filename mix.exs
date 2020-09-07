@@ -24,8 +24,8 @@ defmodule EctoTestDataBuilder.MixProject do
       name: "Ecto Test Data Builder",
       source_url: @github,
       docs: [
-        main: "EctoTestDataBuilder",
-        extras: ["CHANGELOG.md"],
+        main: "README",
+        extras: ~w/README.md CHANGELOG.md USE.md/,
       ],
       
       package: [

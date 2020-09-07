@@ -3,6 +3,8 @@ defmodule EctoTestDataBuilder.Schema do
 
   @moduledoc """
   Functions for working with schemas inside a repo.
+
+  "Repo" here is the slang for the in-memory structure that mimics 
   """
   
   @doc """
@@ -42,6 +44,9 @@ defmodule EctoTestDataBuilder.Schema do
   schema's name), the second an individual instance of the schema.
   
   Return `nil` if either key does not exist.
+
+  Test code usually uses the results of `EctoTestDataBuilder.Repo.shorthand/2`
+  in preference to this function.
   """
   def get(repo, schema, name) do
     schemas(repo)[schema][name]
