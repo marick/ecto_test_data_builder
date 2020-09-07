@@ -49,11 +49,20 @@ defmodule EctoTestDataBuilder.RepoTest do
         B.Repo.shorthand(repo, schema: :animal, name: "missing")
       end
     end
+
+    test "string names are downcased and underscored" do
+      repo = 
+        @start
+        |> B.Schema.put(:animal, "Bossie the Cow", "bossie data")
+        |> B.Repo.shorthand(schema: :animal)
+
+      assert repo.bossie_the_cow == "bossie data"
+    end      
   end
   
   describe "loading completely" do
 
-    defp reloader _schema, value do 
+    defp loader _schema, value do 
       %{value | association: %{note: "association loaded"}}
     end
       
@@ -62,7 +71,7 @@ defmodule EctoTestDataBuilder.RepoTest do
 
       pass = fn opts ->
         repo
-        |> B.Repo.reload(&reloader/2, opts)
+        |> B.Repo.load_fully(&loader/2, opts)
         |> B.Schema.get(:animal, "bossie")
         |> assert_field(association: %{note: "association loaded"})
       end
@@ -76,7 +85,7 @@ defmodule EctoTestDataBuilder.RepoTest do
     test "the schema can be missing" do
       # It happens to create an empty one, which is harmless
       pass = fn opts, repo, schema ->
-        new_repo = B.Repo.reload(repo, &reloader/2, opts)
+        new_repo = B.Repo.load_fully(repo, &loader/2, opts)
         assert B.Schema.names(new_repo, schema) == []
       end
 
@@ -94,15 +103,15 @@ defmodule EctoTestDataBuilder.RepoTest do
       repo = B.Schema.put(@start, :animal, "bossie", "bossie")
 
       assert_raise RuntimeError, fn -> 
-        B.Repo.reload(repo, &reloader/2, schema: :animal, name: "missing")
+        B.Repo.load_fully(repo, &loader/2, schema: :animal, name: "missing")
       end
     end
 
-    test "reloading re-establishes shorthand" do
+    test "loading re-establishes shorthand" do
       repo = 
         B.Schema.put(@start, :animal, "bossie", @fake_animal)
         |> B.Repo.shorthand(schema: :animal)
-        |> B.Repo.reload(&reloader/2, schema: :animal)
+        |> B.Repo.load_fully(&loader/2, schema: :animal)
 
       repo.bossie.association
       |> assert_field(note: "association loaded")

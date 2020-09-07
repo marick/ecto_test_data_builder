@@ -3,22 +3,23 @@ defmodule EctoTestDataBuilder.Repo do
   alias EctoTestDataBuilder.Schema, as: Schema
 
   @doc """
-  Reload all values in a list of schemas, with thoroughness determined by caller.
+  Fully load all values in a list of schemas, with "fully" determined by caller.
 
-      reload(repo, [:animal, :procedure], reloader)
+      load_fully(repo, [:animal, :procedure], loader)
 
   The result is a new repo, with the values within the schemas having
-  been reloaded from the persistent store.
+  been loaded from the persistent store. Typically, the values have
+  had some or all of their associations loaded. 
 
   There are these variants:
 
-      reload(repo, value_reloader, schemas: [:animal, :procedure]        )
-      reload(repo, value_reloader, schema:   :animal                     )
-      reload(repo, value_reloader, schema:   :animal,  names: ["bossie"] )
-      reload(repo, value_reloader, schema:   :animal,  name:   "bossie"  )
+      load_fully(repo, value_loader, schemas: [:animal, :procedure]        )
+      load_fully(repo, value_loader, schema:   :animal                     )
+      load_fully(repo, value_loader, schema:   :animal,  names: ["bossie"] )
+      load_fully(repo, value_loader, schema:   :animal,  name:   "bossie"  )
 
-  A `value_reloader` is given two arguments. The first is a schema name; the
-  second is a value from which a query key can be extracted. The value reloader
+  A `value_loader` is given two arguments. The first is a schema name; the
+  second is a value from which a query key can be extracted. The loader
   most likely calls code like this:
 
            query =
@@ -27,9 +28,9 @@ defmodule EctoTestDataBuilder.Repo do
              preload: [:service_gaps, :species]
            Repo.one!(query)
 
-  That's not so efficient, but it relieves the reloader of the
-  responsibility of indicating which reloaded value corresponds to
-  which name/key.
+  In many cases, it would be possible to use a `where a.id in [...]`
+  query, but that would require the loader to keep track of which
+  loaded value corresponds to which name/key.
 
   It is safe - a no-op - to refer to a schema that has never been created (and
   consequently contains no values. Referring to a nonexistent name raises an
@@ -37,35 +38,35 @@ defmodule EctoTestDataBuilder.Repo do
 
   If `shorthand/2` has been used, the shorthand values are also updated.
   """
-  def reload(repo, reloader, opts) do
+  def load_fully(repo, loader, opts) do
     case Enum.into(opts, %{}) do
       %{schema: schema, names: names} ->
-        reload_for_names_within_schema(repo, schema, names, reloader)
+        load_for_names_within_schema(repo, schema, names, loader)
       %{schema: schema, name: name} ->
-        reload_for_names_within_schema(repo, schema, [name], reloader)
+        load_for_names_within_schema(repo, schema, [name], loader)
       %{schema: schema} ->
-        reload_for_all_within_schema(repo, schema, reloader)
+        load_for_all_within_schema(repo, schema, loader)
       %{schemas: schemas} ->
-        reload_for_all_within_schemas(repo, schemas, reloader)
+        load_for_all_within_schemas(repo, schemas, loader)
     end
   end
 
-  defp reload_for_all_within_schemas(repo, schema_list, reloader) do
+  defp load_for_all_within_schemas(repo, schema_list, loader) do
     Enum.reduce(schema_list, repo, fn schema, acc ->
-      reload_for_all_within_schema(acc, schema, reloader)
+      load_for_all_within_schema(acc, schema, loader)
     end)
   end
 
-  defp reload_for_all_within_schema(repo, schema, reloader) do
+  defp load_for_all_within_schema(repo, schema, loader) do
     names = Schema.names(repo, schema)
-    reload_for_names_within_schema(repo, schema, names, reloader)
+    load_for_names_within_schema(repo, schema, names, loader)
   end
 
-  defp reload_for_names_within_schema(repo, schema, names, reloader) do
+  defp load_for_names_within_schema(repo, schema, names, loader) do
     values =
       for n <- names, do: requiring_existence(repo, schema, n, &(&1))
     new_values =
-      for v <- values, do: reloader.(schema, v)
+      for v <- values, do: loader.(schema, v)
     replacements =
       Enum.zip(names, new_values)
 
@@ -93,6 +94,12 @@ defmodule EctoTestDataBuilder.Repo do
       shorthand(repo, schema:   :animal                     )
       shorthand(repo, schema:   :animal,  names: ["bossie"] )
       shorthand(repo, schema:   :animal,  name:   "bossie"  )
+
+  Names are downcased and any spaces are replaced with underscores, so this:
+
+      shorthand(repo, schema:   :animal,  name:   "Bossie the Cow")
+
+  ... is attached to the repo so that `repo.bossie_the_cow` retrieves the value.
 
   It is safe - a no-op - to refer to a schema that has never been created (and
   consequently contains no values. Referring to a nonexistent name raises an
@@ -142,7 +149,8 @@ defmodule EctoTestDataBuilder.Repo do
   end
 
   defp remember_shorthand(repo, {_, name} = key) do
-    name_atom = name |> String.downcase |> String.to_atom
+    name_atom =
+      name |> String.downcase |> String.replace(" ", "_") |> String.to_atom
 
     memory = Map.put(shorthands(repo), key, name_atom)
     Map.put(repo, :__shorthands__, memory)

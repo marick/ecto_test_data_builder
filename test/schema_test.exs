@@ -58,5 +58,4 @@ defmodule EctoTestDataBuilder.SchemaTest do
     assert B.Schema.names(repo, :animal) == ["bossie"]
     assert B.Schema.names(repo, :nothing) == []
   end    
-
 end
