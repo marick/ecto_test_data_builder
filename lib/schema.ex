@@ -91,4 +91,32 @@ defmodule EctoTestDataBuilder.Schema do
   end
   
   defp schemas(repo), do: Map.get(repo, :__schemas__, %{})
+
+  @doc """
+  Override defaults, but complain about non-default keys
+
+      combine_opts([a: 5555], %{a: 1, b: 2})   # %{a: 5555, b: 2}
+      combine_opts([c: 5555], %{a: 1, b: 2})   # "Unrecognized options: [:c]"
+
+  The first value must be a keyword list. The second values may be a keyword
+  list or a map. 
+
+  The return value is always a map. 
+
+  """
+  
+  def combine_opts(given_options, defaults) when is_list(defaults),
+    do: combine_opts(given_options, Enum.into(defaults, %{}))
+    
+  def combine_opts(given_options, defaults) do
+    given_keys   = given_options |> Keyword.keys |> MapSet.new
+    default_keys = defaults      |>     Map.keys |> MapSet.new
+    
+    case MapSet.difference(given_keys, default_keys) |> Enum.into([]) do
+      [] -> 
+        Enum.into(given_options, defaults)
+      extras ->
+        raise("Unrecognized options: #{inspect extras}")
+    end
+  end
 end

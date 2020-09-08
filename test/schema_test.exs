@@ -57,5 +57,24 @@ defmodule EctoTestDataBuilder.SchemaTest do
 
     assert B.Schema.names(repo, :animal) == ["bossie"]
     assert B.Schema.names(repo, :nothing) == []
-  end    
+  end
+
+
+  describe "combine_opts" do
+    test "uses defaults" do
+      default = %{a: "default", b: "default b"}
+      
+      assert B.Schema.combine_opts([    ], default) == default
+      assert B.Schema.combine_opts([a: 5], default) == %{default | a: 5}
+
+      assert_raise(RuntimeError, "Unrecognized options: [:c]", fn ->
+        B.Schema.combine_opts([a: 5, c: 10], default)
+      end) |> IO.inspect
+    end
+
+    test "you can use a keyword argument as second argument" do
+      default = [a: 1]
+      assert B.Schema.combine_opts([a: 5], default) == %{a: 5}
+    end 
+  end
 end
