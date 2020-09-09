@@ -5,7 +5,7 @@ defmodule EctoTestDataBuilder.Repo do
 
   Functions for manipulating the repo cache.
 
-  One can `load_fully/3` individual cache values, or groups of
+  One can `fully_load/3` individual cache values, or groups of
   them. "Fully loaded" is application-defined, but typically means
   most or all of a schema's associations.
 
@@ -19,7 +19,7 @@ defmodule EctoTestDataBuilder.Repo do
   @doc """
   Fully load all values in a list of schemas, with "fully" determined by caller.
 
-      load_fully(repo, [:animal, :procedure], loader)
+      fully_load(repo, [:animal, :procedure], loader)
 
   The result is a new repo, with the values within the schemas having
   been loaded from the persistent store. Typically, the values have
@@ -27,10 +27,10 @@ defmodule EctoTestDataBuilder.Repo do
 
   There are these variants:
 
-      load_fully(repo, value_loader, schemas: [:animal, :procedure]        )
-      load_fully(repo, value_loader, schema:   :animal                     )
-      load_fully(repo, value_loader, schema:   :animal,  names: ["bossie"] )
-      load_fully(repo, value_loader, schema:   :animal,  name:   "bossie"  )
+      fully_load(repo, value_loader, schemas: [:animal, :procedure]        )
+      fully_load(repo, value_loader, schema:   :animal                     )
+      fully_load(repo, value_loader, schema:   :animal,  names: ["bossie"] )
+      fully_load(repo, value_loader, schema:   :animal,  name:   "bossie"  )
 
   A `value_loader` is given two arguments. The first is a schema name; the
   second is a value from which a query key can be extracted. The loader
@@ -52,7 +52,7 @@ defmodule EctoTestDataBuilder.Repo do
 
   If `shorthand/2` has been used, the shorthand values are also updated.
   """
-  def load_fully(repo, loader, opts) do
+  def fully_load(repo, loader, opts) do
     case Enum.into(opts, %{}) do
       %{schema: schema, names: names} ->
         load_for_names_within_schema(repo, schema, names, loader)

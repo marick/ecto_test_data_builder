@@ -71,7 +71,7 @@ defmodule EctoTestDataBuilder.RepoTest do
 
       pass = fn opts ->
         repo
-        |> B.Repo.load_fully(&loader/2, opts)
+        |> B.Repo.fully_load(&loader/2, opts)
         |> B.Schema.get(:animal, "bossie")
         |> assert_field(association: %{note: "association loaded"})
       end
@@ -85,7 +85,7 @@ defmodule EctoTestDataBuilder.RepoTest do
     test "the schema can be missing" do
       # It happens to create an empty one, which is harmless
       pass = fn opts, repo, schema ->
-        new_repo = B.Repo.load_fully(repo, &loader/2, opts)
+        new_repo = B.Repo.fully_load(repo, &loader/2, opts)
         assert B.Schema.names(new_repo, schema) == []
       end
 
@@ -103,7 +103,7 @@ defmodule EctoTestDataBuilder.RepoTest do
       repo = B.Schema.put(@start, :animal, "bossie", "bossie")
 
       assert_raise RuntimeError, fn -> 
-        B.Repo.load_fully(repo, &loader/2, schema: :animal, name: "missing")
+        B.Repo.fully_load(repo, &loader/2, schema: :animal, name: "missing")
       end
     end
 
@@ -111,7 +111,7 @@ defmodule EctoTestDataBuilder.RepoTest do
       repo = 
         B.Schema.put(@start, :animal, "bossie", @fake_animal)
         |> B.Repo.shorthand(schema: :animal)
-        |> B.Repo.load_fully(&loader/2, schema: :animal)
+        |> B.Repo.fully_load(&loader/2, schema: :animal)
 
       repo.bossie.association
       |> assert_field(note: "association loaded")
