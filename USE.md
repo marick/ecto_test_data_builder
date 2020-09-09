@@ -264,30 +264,43 @@ Factory.insert!(:animal, name: "bossie", species_id: 3)
 So the `animal` function could take keyword arguments and just pass
 them onto `Factory.insert!`. I have a mild preference for having the
 builder function control its own options because it's often convenient
-to synthesize schema fields from options. For example, animals have a
-date range during which they're available. Much of the time, all that
-matters is the beginning date. So the `:span` field's value (always a
-`Datespan` is synthesized from `animal`'s `available:` option, which
-may be a `Date` or a `Datespan`:
+to synthesize schema fields (and thus ExMachina options) from
+them. For example, animals have a date range during which they're
+available. Much of the time, all that matters is the beginning
+date. So the `:span` field's value (always a `Datespan`) is synthesized
+from `animal`'s `available:` option, which may be a `Date` or a
+`Datespan`.
 
 ```elixir
+  @doc """
+  Shorthand: yes, fully_loaded: yes
+
+  Options: 
+
+  * `available`: A `Date` or `Datespan`. A `Date` is converted to a
+    "customary" `Datespan` with endpoint `@latest_date`.
+    
+  """
   def animal(repo, animal_name, opts \\ []) do
     schema = :animal
+    builder_map = B.Schema.combine_opts(opts, animal_defaults())
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
     B.Schema.create_if_needed(repo, schema, animal_name, fn ->
-      animal = Factory.sql_insert!(schema, animal_opts(repo, animal_name, opts))
-                                           #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      factory_opts = animal_factory_opts(repo, animal_name, builder_map)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      animal = Factory.sql_insert!(schema, factory_opts)
+                                           ^^^^^^^^^^^^
       reloader(schema, animal)
     end)
     |> B.Repo.shorthand(schema: schema, name: animal_name)
   end
 
-  defp animal_opts(repo, name, builder_opts) do
-    default = %{available: @earliest_date}
+  defp animal_defaults(), do: %{available: @earliest_date}
 
-    opts = B.Schema.combine_opts(builder_opts, default)
+  defp animal_factory_opts(repo, name, builder_map) do
     [name: name,
-     span: compute_span(opts.available),
+     span: compute_span(builder_map.available),
      species_id: repo.species_id]
   end
 ```
@@ -295,11 +308,15 @@ may be a `Date` or a `Datespan`:
 `B.Schema.combine_opts` is like `Enum.into` except that it complains if
 the first argument contains extra keys. I make a lot of typos.
 
+I separate out the defaults and `ExMachina` options because they're by
+far the most likely parts of `animal` to change, so I want to make
+them easy to find. 
 
 ## Adding an association
 
+
 Animals may have one or more associated *service gaps*. For example,
-some horses might be on pasture for the summer. This is a typical example of adding a table row with a foreign key:
+some horses might be on pasture for the summer. 
 
 ```elixir
   schema "service_gaps" do
@@ -316,7 +333,102 @@ Because a `ServiceGap` can't be created before the `Animal` it belongs
 to, the repo has to be created like this:
 
 ```elixir
-
+repo = 
+  empty_repo()
+  |> animal("bossie", ...)
+  |> service_gap_for("bossie", ...)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^
 ```
 
+The implementation looks much the same as `animal`'s. Let me draw
+attention to one line:
+
+```elixir
+  def service_gap_for(repo, animal_name, opts \\ []) do
+    schema = :service_gap
+    builder_map = B.Schema.combine_opts(opts, service_gap_defaults())
+
+    repo 
+    |> B.Schema.create_if_needed(schema, builder_map.name, fn ->
+         factory_opts = service_gap_factory_opts(repo, animal_name, builder_map)
+         Factory.sql_insert!(schema, factory_opts)
+       end)
+    |> B.Repo.shorthand(schema: schema, name: builder_map.name)
+    |> reload_animal(animal_name)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  end
+```
+
+That line fully reloads the animal using its `reloader` function. The
+implementation looks like this:
+
+```elixir
+  defp reload_animal(repo, animal_name),
+    do: B.Repo.fully_load(repo, &reloader/2, schema: :animal, name: animal_name)
+```
+
+`B.Repo.fully_load` first finds the animal value, passes it to the
+`reloader`, and then redoes the `shorthand` for that animal (if
+any). Cache consistency!
+
+
+### A few minor things about `service_gap_for`
+
+`service_gap_for` takes a name for the animal, but none (by default)
+for the service gap. It has to *have* a name to be put in the repo
+cache, so one is generated in the defaults:
+
+```elixir
+  defp service_gap_defaults do
+    %{starting: @earliest_date, ending: @latest_date,
+      reason: Factory.unique(:reason),
+      name: Factory.unique(:service_gap)
+    }
+  end
+```
+
+... and then used to create the `ServiceGap` value:
+
+```elixir
+    repo 
+    |> B.Schema.create_if_needed(schema, builder_map.name, fn ->
+                                         ^^^^^^^^^^^^^^^^
+         factory_opts = service_gap_factory_opts(repo, animal_name, builder_map)
+         Factory.sql_insert!(schema, factory_opts)
+       end)
+```
+
+
+ExMachina's `unique` will make sure no two default service gaps will
+have the same name. A name can be provided, though:
+
+```elixir
+  |> service_gap_for("bossie", name: "sg")
+```
+
+This name gets installed as shorthand, really just for consistency
+with other schemas. The generated names get shorthand too, just out of laziness. 
+
+
+The foreign key to the `Animal` is generated from the repo by looking
+up the given `animal_name`: 
+
+```elixir
+  defp service_gap_factory_opts(repo, animal_name, builder_map) do
+    span = Datespan.customary(builder_map.starting, builder_map.ending)
+    animal_id = B.Schema.get(repo, schema, name).id
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    [animal_id: animal_id, span: span, reason: builder_map.reason]
+  end
+```
+
+With this library, actual database ids appear only seldom in tests and
+test support code. And when they do appear, it's transitory (like in
+an assertion).
+
+Notice that the value returned from `Factory.sql_insert!` is not
+reloaded. (Indeed, `reloader(:procedure, ...)` does nothing.) Because
+a `ServiceGap` has no associations, there's no need to reload.
+
+## Cascading creation
 
