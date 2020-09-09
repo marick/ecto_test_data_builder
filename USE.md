@@ -432,3 +432,78 @@ a `ServiceGap` has no associations, there's no need to reload.
 
 ## Cascading creation
 
+Let's now consider a repo cache built like this:
+
+```elixir
+repo = 
+  empty_repo()
+  |> procedure("haltering", frequency: "twice per week")
+  |> animal("bossie")
+  |> animal("daisy")
+  |> reservation_for(["bossie", "daisy"], ["haltering"], date: @wed)
+```
+
+`procedure` is a function very like `animal`, except that it deals
+with medical procedures rather than the animals they're demonstrated
+on.
+
+The interesting thing about this pipeline is there are two calls to
+`animal` that create animals whose properties are utterly
+uninteresting. Those two calls are then followed by a
+`reservation_for` that mentions those two utterly uninteresting
+animals. Why not have mentioning an animal create it if it hasn't
+already been created? That would look like this:
+
+```elixir
+repo = 
+  empty_repo()
+  |> procedure("haltering", frequency: "twice per week")
+  |> reservation_for(["bossie", "daisy"], ["haltering"], date: @wed)
+```
+
+The implementation for `reservation_for` indeed does that, and it's only a small variation from what you've already seen:
+
+```elixir
+  def reservation_for(repo, animal_names, procedure_names, opts \\ []) do
+    schema = :reservation
+    builder_map = B.Schema.combine_opts(opts, reservation_defaults())
+
+    repo
+    |> procedures(procedure_names)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |> animals(animal_names)
+       ^^^^^^^^^^^^^^^^^^^^^
+    |> B.Schema.create_if_needed(schema, builder_map.name, fn -> 
+         factory_opts = reservation_factory_opts(builder_map)
+         reservation = 
+           ReservationFocused.reserved!(
+             repo.species_id, animal_names, procedure_names, factory_opts)
+         reloader(schema, reservation)
+       end)
+    |> B.Repo.shorthand(schema: schema, name: builder_map.name)
+  end
+```
+
+`procedures` and `animals` just add a list of uninteresting animals to
+the repo cache (unless they already exist). Because this is a common operation,
+there's a macro to write that code: 
+
+```elixir
+  require B.Macro
+  B.Macro.make_plural_builder(:procedures, from: :procedure)
+  B.Macro.make_plural_builder(:animals, from: :animal)
+```
+
+### Note
+
+The body of `create_if_needed` uses a function,
+`ReservationFocused.reserved!`, that predates this style of test
+building. So that code is not as cleanly matched to this package as
+I'd like. I'll eventually clean it up.
+
+
+## The stirring conclusion
+
+I hope this lets you copy, paste, and tweak your way to your
+app-specific test data builder. This package was very much created by
+me "scratching my own itch", so I encourage you to suggest additions. 
