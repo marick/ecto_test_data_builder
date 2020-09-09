@@ -69,7 +69,7 @@ defmodule EctoTestDataBuilder.SchemaTest do
 
       assert_raise(RuntimeError, "Unrecognized options: [:c]", fn ->
         B.Schema.combine_opts([a: 5, c: 10], default)
-      end) |> IO.inspect
+      end)
     end
 
     test "you can use a keyword argument as second argument" do
