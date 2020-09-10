@@ -45,13 +45,14 @@ That's surprisingly useful.
 
 ## More information
 
+[Online documentation](https://hexdocs.pm/ecto_test_data_builder)
+
 See [USE.md](./USE.md) for a description of using this package to
 create a custom test-data builder.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `ecto_test_data_builder` to your list of dependencies in `mix.exs`:
+Add `ecto_test_data_builder` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -60,8 +61,3 @@ def deps do
   ]
 end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/ecto_test_data_builder](https://hexdocs.pm/ecto_test_data_builder).
-
