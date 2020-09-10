@@ -1,6 +1,6 @@
 # An Example of Creating a Builder Module
 
-[The app in question](https://github.com/marick/crit19) lets people
+[The app in question]([Critter4Us](https://github.com/marick/crit19)) lets people
 reserve animals at a veterinary teaching hospital. The animals are
 reserved by professors to demonstrate *procedures* to students, and
 then to let students practice those procedures. It's similar to
@@ -11,18 +11,20 @@ Here's a picture of the database tables relevant to reservations:
 
 <img src="/pics/reservation_schema.png" width="400px"/>
 
+The test data builder for that repo is in LINKY.
+
 ## The prepopulated database
 
 When it comes to automated tests, I generally avoid prepopulating test
 databases, preferring to have each test or group of tests be
 completely responsible for setup. That's partly for reasons of test
 clarity: it's hard for someone coming to a test to know what to assume
-about existing state. It's partly for maintainability: Adding
+about existing state. It's partly for maintainability: adding
 something to the default state can break existing tests in mysterious
 ways.
 
 For this app, every test can assume the existence of two species (cows
-and horses) and two *procedure frequencies* (once per week and
+and horses) and two *procedure frequencies* ("once per week" and
 "unlimited"). Procedure frequencies limit how often a particular
 animal can be used to demonstrate a particular procedure. (This is for
 reasons of animal welfare.)
@@ -48,11 +50,11 @@ Both animals and procedures "belong to" a species. Tests almost never
 depend on which species that is, so by default it's the prepopulated
 bovine (cow) species. All animals and procedures created hereafter
 will be bovine. (A test that wanted to populate the database with
-different species would have to manage a second repo cache.
+different species would most likely use a second repo cache.)
 
 ## ExMachina
 
-Let's start by looking at the definition of an `Animal`:
+Let's start by looking at the definition of an `Animal`:  LINKY
 
 ```elixir
   schema "animals" do
@@ -68,7 +70,7 @@ Let's start by looking at the definition of an `Animal`:
 
 We need a simple way to insert a single animal into the database. 
 I'm
-using ExMachina for that. The code to create an Animal that's not been
+using ExMachina LINKY for that. With ExMachina, the code to create an `Animal` that's not been
 persisted to the database looks like this:
 
 ```elixir
@@ -93,10 +95,10 @@ implementation of the "animal factory" looks like this:
 ```
 
 Notice that the `:name` and `:species_id` fields are given random
-values. (`Faker.Cat.name` chooses randomly from a list of plausible
+values. (`Faker.Cat.name`, from the Faker package LINKY, chooses randomly from a list of plausible
 cat names.) Generally, I think that's a good practice. If the test
-doesn't declare that the name is relevant (by passing it explicitly
-in), let's test the test by making the name different every time.
+doesn't declare that a value is relevant (by passing it explicitly
+in), let's test the test by making it different every time.
 
 ExMachina also lets you persist the built value to the
 database:
@@ -109,15 +111,15 @@ Such a function is the foundation of the terser test-data builder
 we're building. We could have a different foundation; nothing depends on ExMachina per se. 
 
 
-This particular app has a custom version of ExMachina's `insert!`
+This particular app uses a custom version of ExMachina's `insert!`
 because it maintains separate tables for different veterinary
 *institutions* (using Postgres schemas). You'll see
 `Factory.sql_insert!(...)`, which just means "insert
-into the test institution".)
+into the test institution.")
 
 ## Explicit creation
 
-Here's the simplest way to create an animal:
+In the finished version of the Critter4Us test builder, here's the simplest way to create an animal:
 
 ```elixir
 empty_repo()
@@ -130,12 +132,14 @@ After this, the test is allowed to assume that an `Animal` named
 The simplest implementation of `animal` would look like this:
 
 ```elixir
-  alias EctoTestDataBuilder, as: B
+alias EctoTestDataBuilder, as: B
 
-  def animal(repo, animal_name) do
-    Factory.sql_insert!(:animal, name: animal_name, species_id: repo.species_id)
-    B.Schema.put(repo, :animal, name, creator.())  
-  end
+def animal(repo, animal_name) do
+  animal =
+    Factory.sql_insert!(:animal,
+      name: animal_name, species_id: repo.species_id)
+  B.Schema.put(repo, :animal, name, animal)
+end
 ```
   
 It might seem better to use `Animal` (an aliased module name) instead
@@ -170,10 +174,11 @@ let's make the `animal(name)` function do nothing if the named animal
 already exists. That looks like this:
 
 ```elixir
-  def animal(repo, animal_name) do
-    B.Schema.create_if_needed(repo, :animal, animal_name, fn ->
-      Factory.sql_insert!(:animal, name: animal_name, species_id: repo.species_id)
-    end)
+def animal(repo, animal_name) do
+  B.Schema.create_if_needed(repo, :animal, animal_name, fn ->
+    Factory.sql_insert!(:animal,
+      name: animal_name, species_id: repo.species_id)
+  end)
 ```
 
 `create_if_needed` will return either an unchanged repo or one that
@@ -190,8 +195,8 @@ like this:
 B.Schema.get(repo, "bossie").id
 ```
 
-However, that's way too wordy. Instead, `animal` is implemented to
-make each animal available via a top-level map key:
+However, that's way too wordy. Instead, `animal` is implemented such that 
+each animal is available via a top-level map key:
 
 ```elixir
 repo.bossie.id
@@ -205,9 +210,11 @@ That's done like this:
     
     repo
     |> B.Schema.create_if_needed(repo, schema, animal_name, fn ->
-         Factory.sql_insert!(schema, name: animal_name, species_id: repo.species_id)
+         Factory.sql_insert!(schema,
+           name: animal_name, species_id: repo.species_id)
        end)
     |> B.Repo.shorthand(schema: schema, name: animal_name)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end
 ```
 
@@ -219,18 +226,19 @@ always load the associations. So the next version of the `animal`
 function looks like this:
 
 ```elixir
-  def animal(repo, animal_name, opts \\ []) do
-    schema = :animal
+def animal(repo, animal_name, opts \\ []) do
+  schema = :animal
     
-    B.Schema.create_if_needed(repo, schema, animal_name, fn ->
-      animal = Factory.sql_insert!(schema,
-                                   name: animal_name, species_id: repo.species_id)
+  B.Schema.create_if_needed(repo, schema, animal_name, fn ->
+    animal =
+      Factory.sql_insert!(schema,
+        name: animal_name, species_id: repo.species_id)
 
-      reloader(schema, animal)
-      #^^^^^^^^^^^^^^^^^^^^^^^
-    end)
-    |> B.Repo.shorthand(schema: schema, name: animal_name)
-  end
+    reloader(schema, animal)
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+  end)
+  |> B.Repo.shorthand(schema: schema, name: animal_name)
+end
 ```
 
 `reloader` is a function that takes a value and reloads that
@@ -249,7 +257,7 @@ something like this:
   defp reloader(_, value), do: value
 ```
 
-As we'll see soon, `reloader` has other uses.
+As we'll soon see, `reloader` has other uses.
 
 ## Creation options
 
@@ -271,15 +279,16 @@ date. So the `:span` field's value (always a `Datespan`) is synthesized
 from `animal`'s `available:` option, which may be a `Date` or a
 `Datespan`.
 
+Option-handling looks like this:
+
 ```elixir
   @doc """
-  Shorthand: yes, fully_loaded: yes
+  Shorthand: yes, fully loaded: yes
 
   Options: 
 
-  * `available`: A `Date` or `Datespan`. A `Date` is converted to a
-    "customary" `Datespan` with endpoint `@latest_date`.
-    
+  * `available`: A `Date` or `Datespan`. A `Date` is converted 
+    to a "customary" `Datespan` with endpoint `@latest_date`.
   """
   def animal(repo, animal_name, opts \\ []) do
     schema = :animal
@@ -287,8 +296,9 @@ from `animal`'s `available:` option, which may be a `Date` or a
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
     B.Schema.create_if_needed(repo, schema, animal_name, fn ->
-      factory_opts = animal_factory_opts(repo, animal_name, builder_map)
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      factory_opts =
+        animal_factory_opts(repo, animal_name, builder_map)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
       animal = Factory.sql_insert!(schema, factory_opts)
                                            ^^^^^^^^^^^^
       reloader(schema, animal)
@@ -308,7 +318,7 @@ from `animal`'s `available:` option, which may be a `Date` or a
 `B.Schema.combine_opts` is like `Enum.into` except that it complains if
 the first argument contains extra keys. I make a lot of typos.
 
-I separate out the defaults and `ExMachina` options because they're by
+I separate out the `animal_defaults` and `animal_factory_opts` because they're by
 far the most likely parts of `animal` to change, so I want to make
 them easy to find. 
 
@@ -344,27 +354,31 @@ The implementation looks much the same as `animal`'s. Let me draw
 attention to one line:
 
 ```elixir
-  def service_gap_for(repo, animal_name, opts \\ []) do
-    schema = :service_gap
-    builder_map = B.Schema.combine_opts(opts, service_gap_defaults())
+def service_gap_for(repo, animal_name, opts \\ []) do
+  schema = :service_gap
+  builder_map = B.Schema.combine_opts(opts, service_gap_defaults())
 
-    repo 
-    |> B.Schema.create_if_needed(schema, builder_map.name, fn ->
-         factory_opts = service_gap_factory_opts(repo, animal_name, builder_map)
-         Factory.sql_insert!(schema, factory_opts)
-       end)
-    |> B.Repo.shorthand(schema: schema, name: builder_map.name)
-    |> reload_animal(animal_name)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  end
+  repo 
+  |> B.Schema.create_if_needed(schema, builder_map.name, fn ->
+       factory_opts =
+         service_gap_factory_opts(repo, animal_name, builder_map)
+       Factory.sql_insert!(schema, factory_opts)
+     end)
+  |> B.Repo.shorthand(schema: schema, name: builder_map.name)
+  |> reload_animal(animal_name)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+end
 ```
 
-That line fully reloads the animal using its `reloader` function. The
-implementation looks like this:
+That line fully reloads the animal using the multi-schema `reloader` function. The
+intermediate function (`reload_animal`) looks like this:
 
 ```elixir
-  defp reload_animal(repo, animal_name),
-    do: B.Repo.fully_load(repo, &reloader/2, schema: :animal, name: animal_name)
+defp reload_animal(repo, animal_name) do 
+  B.Repo.fully_load(repo,
+                    &reloader/2,
+                    schema: :animal, name: animal_name)
+end
 ```
 
 `B.Repo.fully_load` first finds the animal value, passes it to the
@@ -383,6 +397,7 @@ cache, so one is generated in the defaults:
     %{starting: @earliest_date, ending: @latest_date,
       reason: Factory.unique(:reason),
       name: Factory.unique(:service_gap)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     }
   end
 ```
@@ -390,12 +405,12 @@ cache, so one is generated in the defaults:
 ... and then used to create the `ServiceGap` value:
 
 ```elixir
-    repo 
-    |> B.Schema.create_if_needed(schema, builder_map.name, fn ->
-                                         ^^^^^^^^^^^^^^^^
-         factory_opts = service_gap_factory_opts(repo, animal_name, builder_map)
-         Factory.sql_insert!(schema, factory_opts)
-       end)
+  repo 
+  |> B.Schema.create_if_needed(schema, builder_map.name, fn ->
+                                       ^^^^^^^^^^^^^^^^
+       factory_opts = service_gap_factory_opts(repo, animal_name, builder_map)
+       Factory.sql_insert!(schema, factory_opts)
+     end)
 ```
 
 
@@ -406,7 +421,7 @@ have the same name. A name can be provided, though:
   |> service_gap_for("bossie", name: "sg")
 ```
 
-This name gets installed as shorthand, really just for consistency
+`service_gap_for` installs that name as shorthand, really just for consistency
 with other schemas. The generated names get shorthand too, just out of laziness. 
 
 
@@ -414,17 +429,19 @@ The foreign key to the `Animal` is generated from the repo by looking
 up the given `animal_name`: 
 
 ```elixir
-  defp service_gap_factory_opts(repo, animal_name, builder_map) do
-    span = Datespan.customary(builder_map.starting, builder_map.ending)
-    animal_id = B.Schema.get(repo, schema, name).id
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    [animal_id: animal_id, span: span, reason: builder_map.reason]
-  end
+defp service_gap_factory_opts(repo, animal_name, builder_map) do
+  span =
+    Datespan.customary(builder_map.starting, builder_map.ending)
+  animal_id = B.Schema.get(repo, schema, name).id
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  [animal_id: animal_id, span: span, reason: builder_map.reason]
+end
 ```
 
-With this library, actual database ids appear only seldom in tests and
-test support code. And when they do appear, it's transitory (like in
-an assertion).
+With this library, tests and test support don't work much with
+ids. Names are more convenient because *you* choose them, not the
+database, so you don't have to store them and pass them all over the
+place.
 
 Notice that the value returned from `Factory.sql_insert!` is not
 reloaded. (Indeed, `reloader(:procedure, ...)` does nothing.) Because
@@ -432,27 +449,7 @@ a `ServiceGap` has no associations, there's no need to reload.
 
 ## Cascading creation
 
-Let's now consider a repo cache built like this:
-
-```elixir
-repo = 
-  empty_repo()
-  |> procedure("haltering", frequency: "twice per week")
-  |> animal("bossie")
-  |> animal("daisy")
-  |> reservation_for(["bossie", "daisy"], ["haltering"], date: @wed)
-```
-
-`procedure` is a function very like `animal`, except that it deals
-with medical procedures rather than the animals they're demonstrated
-on.
-
-The interesting thing about this pipeline is there are two calls to
-`animal` that create animals whose properties are utterly
-uninteresting. Those two calls are then followed by a
-`reservation_for` that mentions those two utterly uninteresting
-animals. Why not have mentioning an animal create it if it hasn't
-already been created? That would look like this:
+Let's now consider `reservation_for`:
 
 ```elixir
 repo = 
@@ -461,32 +458,34 @@ repo =
   |> reservation_for(["bossie", "daisy"], ["haltering"], date: @wed)
 ```
 
-The implementation for `reservation_for` indeed does that, and it's only a small variation from what you've already seen:
+As we saw [above](#implicit-creation), it creates `"bossie"` and
+`"daisy"` for you. How, exactly? Like this:
+
 
 ```elixir
-  def reservation_for(repo, animal_names, procedure_names, opts \\ []) do
-    schema = :reservation
-    builder_map = B.Schema.combine_opts(opts, reservation_defaults())
+def reservation_for(repo, animal_names, procedure_names, opts \\ []) do
+  schema = :reservation
+  builder_map = B.Schema.combine_opts(opts, reservation_defaults())
 
-    repo
-    |> procedures(procedure_names)
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    |> animals(animal_names)
-       ^^^^^^^^^^^^^^^^^^^^^
-    |> B.Schema.create_if_needed(schema, builder_map.name, fn -> 
-         factory_opts = reservation_factory_opts(builder_map)
-         reservation = 
-           ReservationFocused.reserved!(
-             repo.species_id, animal_names, procedure_names, factory_opts)
-         reloader(schema, reservation)
-       end)
-    |> B.Repo.shorthand(schema: schema, name: builder_map.name)
-  end
+  repo
+  |> procedures(procedure_names)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |> animals(animal_names)
+     ^^^^^^^^^^^^^^^^^^^^^
+  |> B.Schema.create_if_needed(schema, builder_map.name, fn -> 
+       factory_opts = reservation_factory_opts(builder_map)
+       reservation = 
+         ReservationFocused.reserved!(
+           repo.species_id, animal_names, procedure_names, factory_opts)
+       reloader(schema, reservation)
+     end)
+  |> B.Repo.shorthand(schema: schema, name: builder_map.name)
+end
 ```
 
 `procedures` and `animals` just add a list of uninteresting animals to
 the repo cache (unless they already exist). Because this is a common operation,
-there's a macro to write that code: 
+there's a macro to write their code: 
 
 ```elixir
   require B.Macro
@@ -506,4 +505,4 @@ I'd like. I'll eventually clean it up.
 
 I hope this lets you copy, paste, and tweak your way to your
 app-specific test data builder. This package was very much created by
-me "scratching my own itch", so I encourage you to suggest additions. 
+me "scratching my own itch," so I encourage you to suggest additions. 
