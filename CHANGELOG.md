@@ -1,3 +1,5 @@
 # Changelog
 
-## 0.1.0 (Pending)
+## 0.1.0
+
+First release.
