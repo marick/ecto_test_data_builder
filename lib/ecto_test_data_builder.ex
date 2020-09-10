@@ -16,7 +16,7 @@ defmodule EctoTestDataBuilder do
             },
          ...}
 
-  Individual animals can be gotten from the schema with `get/3`, but
+  Individual animals can be gotten from the schema with `EctoTestDataBuilder.Schema.get/3`, but
   there's a shorthand notation that's usually better. You can choose for
   the repo cache to have top-level keys that are the names of leaf values:
   

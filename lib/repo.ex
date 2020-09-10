@@ -19,8 +19,6 @@ defmodule EctoTestDataBuilder.Repo do
   @doc """
   Fully load all values in a list of schemas, with "fully" determined by caller.
 
-      fully_load(repo, [:animal, :procedure], loader)
-
   The result is a new repo, with the values within the schemas having
   been loaded from the persistent store. Typically, the values have
   had some or all of their associations loaded. 
@@ -42,12 +40,15 @@ defmodule EctoTestDataBuilder.Repo do
              preload: [:service_gaps, :species]
            Repo.one!(query)
 
+  Each value is loaded in a separate query.
   In many cases, it would be possible to use a `where a.id in [...]`
   query, but that would require the loader to keep track of which
-  loaded value corresponds to which name/key.
+  loaded value corresponds to which name/key. Loading one at a time
+  means you don't have to write that code (which isn't trivial in the
+  absence of a guarantee about order).
 
   It is safe - a no-op - to refer to a schema that has never been created (and
-  consequently contains no values. Referring to a nonexistent name raises an
+  consequently contains no values). Referring to a nonexistent name raises an
   exception.
 
   If `shorthand/2` has been used, the shorthand values are also updated.
@@ -113,10 +114,10 @@ defmodule EctoTestDataBuilder.Repo do
 
       shorthand(repo, schema:   :animal,  name:   "Bossie the Cow")
 
-  ... is attached to the repo so that `repo.bossie_the_cow` retrieves the value.
+  ... is attached to the repo such that `repo.bossie_the_cow` retrieves the value.
 
   It is safe - a no-op - to refer to a schema that has never been created (and
-  consequently contains no values. Referring to a nonexistent name raises an
+  consequently contains no values). Referring to a nonexistent name raises an
   exception.
   """
   def shorthand(repo, opts) do

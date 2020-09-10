@@ -1,12 +1,21 @@
 defmodule EctoTestDataBuilder.Macro do
 
+  @moduledoc """
+  Macros useful for writing a test-data builder.
+  """
+
   @doc """
-  Define a function that produces a list of boring repo cache values
+  Given a function that produces a single repo value, produce a function
+  that creates many.
 
       B.Macro.make_plural_builder(:procedures, from: :procedure)
 
   The new function (`procedures`) is passed a `repo` and a list of
-  names. It ensures that all of the names exist in the `repo` by passing
+  names.
+
+      procedures(["haltering", "pregnancy checking"])
+
+  `procedures` ensures that all of the names exist in the `repo` by passing
   each of them to the old function (`procedure`).
 
   The new function is used to quicky and easily create values that have
@@ -14,6 +23,7 @@ defmodule EctoTestDataBuilder.Macro do
   by name. 
   """
 
+  defmacro make_plural_builder(plural, from_keyword)
   defmacro make_plural_builder(plural, from: singular) do
     quote do
       def unquote(plural)(repo, names) do

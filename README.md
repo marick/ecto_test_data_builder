@@ -41,7 +41,7 @@ repo =
                                    ^^^^^^^^^^^^^^
 ```
 
-This is surprisingly useful.
+That's surprisingly useful.
 
 ## More information
 
