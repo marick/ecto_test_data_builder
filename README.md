@@ -14,7 +14,7 @@ repo =
 That code constructs test data for a database
 configuration like this:
 
-<img src="/pics/reservation_schema.png" width="400px"/>
+<img src="https://raw.githubusercontent.com/marick/ecto_test_data_builder/main/pics/reservation_schema.png" width="400px"/>
 
 I claim that code is a better way to set up test data than other approaches. 
 

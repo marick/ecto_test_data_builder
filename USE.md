@@ -9,7 +9,7 @@ room can be used for daily status meetings more than twice a week.")
 
 Here's a picture of the database tables relevant to reservations:
 
-<img src="/pics/reservation_schema.png" width="400px"/>
+<img src="https://raw.githubusercontent.com/marick/ecto_test_data_builder/main/pics/reservation_schema.png" width="600px"/>
 
 The test data builder for that repo is in Critter4Us's [repo_state.ex](https://github.com/marick/crit19/blob/main/test/support/repo_state.ex).
 
