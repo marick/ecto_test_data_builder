@@ -1,6 +1,6 @@
 # An Example of Creating a Builder Module
 
-The app in question([Critter4Us](https://github.com/marick/crit19)) lets people
+The app in question ([Critter4Us](https://github.com/marick/crit19)) lets people
 reserve animals at a veterinary teaching hospital. The animals are
 reserved by professors to demonstrate *procedures* to students, and
 then to let students practice those procedures. It's similar to
