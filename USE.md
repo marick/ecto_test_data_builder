@@ -1,6 +1,6 @@
 # An Example of Creating a Builder Module
 
-[The app in question]([Critter4Us](https://github.com/marick/crit19)) lets people
+The app in question([Critter4Us](https://github.com/marick/crit19)) lets people
 reserve animals at a veterinary teaching hospital. The animals are
 reserved by professors to demonstrate *procedures* to students, and
 then to let students practice those procedures. It's similar to
@@ -11,7 +11,7 @@ Here's a picture of the database tables relevant to reservations:
 
 <img src="/pics/reservation_schema.png" width="400px"/>
 
-The test data builder for that repo is in LINKY.
+The test data builder for that repo is in Critter4Us's [repo_state.ex](https://github.com/marick/crit19/blob/main/test/support/repo_state.ex).
 
 ## The prepopulated database
 
@@ -54,7 +54,7 @@ different species would most likely use a second repo cache.)
 
 ## ExMachina
 
-Let's start by looking at the definition of an `Animal`:  LINKY
+Let's start by looking at the definition of an [`Animal`](https://github.com/marick/crit19/blob/main/lib/crit/schemas/animal.ex):
 
 ```elixir
   schema "animals" do
@@ -70,7 +70,7 @@ Let's start by looking at the definition of an `Animal`:  LINKY
 
 We need a simple way to insert a single animal into the database. 
 I'm
-using ExMachina LINKY for that. With ExMachina, the code to create an `Animal` that's not been
+using [ExMachina](https://hexdocs.pm/ex_machina/readme.html) for that. With ExMachina, the code to create an `Animal` that's not been
 persisted to the database looks like this:
 
 ```elixir
@@ -95,7 +95,7 @@ implementation of the "animal factory" looks like this:
 ```
 
 Notice that the `:name` and `:species_id` fields are given random
-values. (`Faker.Cat.name`, from the Faker package LINKY, chooses randomly from a list of plausible
+values. (`Faker.Cat.name`, from the [Faker](https://github.com/elixirs/faker) package, chooses randomly from a list of plausible
 cat names.) Generally, I think that's a good practice. If the test
 doesn't declare that a value is relevant (by passing it explicitly
 in), let's test the test by making it different every time.
